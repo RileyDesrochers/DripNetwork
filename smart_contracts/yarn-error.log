@@ -1,0 +1,33 @@
+Arguments: 
+  /home/riley/.nvm/versions/node/v16.10.0/bin/node /home/riley/.yarn/bin/yarn.js install
+
+PATH: 
+  /home/riley/.yarn/bin:/home/riley/.config/yarn/global/node_modules/.bin:/home/riley/.local/bin:/home/riley/.yarn/bin:/home/riley/.config/yarn/global/node_modules/.bin:/home/riley/.nvm/versions/node/v16.10.0/bin:/home/riley/.cargo/bin:/home/riley/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+
+Yarn version: 
+  1.22.19
+
+Node version: 
+  16.10.0
+
+Platform: 
+  linux x64
+
+Trace: 
+  Error: getaddrinfo EAI_AGAIN registry.yarnpkg.com
+      at GetAddrInfoReqWrap.onlookup [as oncomplete] (node:dns:71:26)
+
+npm manifest: 
+  {
+    "name": "hardhat-project",
+    "devDependencies": {
+      "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+      "hardhat": "^2.12.2"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
