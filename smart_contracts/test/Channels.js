@@ -16,7 +16,7 @@ const {
       const USDC = await ethers.getContractFactory("USDC");
       const usdc = await USDC.deploy(1000000000);
       const Channel = await ethers.getContractFactory("Channel");
-      const channel = await Channel.deploy(usdc.address);//USDC
+      const channel = await Channel.deploy(usdc.address, owner.address, 1);//USDC
   
       return { owner, otherAccount, channel, usdc};
     }
@@ -43,15 +43,15 @@ const {
         ch = await channel.getChannelByAddresses(owner.address, otherAccount.address);
         expect(await channel.balanceOf(owner.address)).to.equal(1000000000-400000);
         expect(ch.value).to.equal(200000);
-
-        let id = 0;
+        //from, address to, address networkProvider, uint256 amount, uint256 round, uint256 marginal, string memory cid
         let amount = 500;
         let round = 0;
+        let cid = 'QmY9Q95z6mJA1DTeULHS4vwNMYe8rHwwWTcBD76oYQvFJh';
 
-        const hash = await channel.getMessageHash(otherAccount.address, amount, round)
+        const hash = await channel.getMessageHash(owner.address, otherAccount.address, owner.address, amount, round, amount, cid)
         const sig = await owner.signMessage(ethers.utils.arrayify(hash))
 
-        await channel.connect(otherAccount).reciverCollectPayment(owner.address, amount, round, sig);
+        await channel.connect(owner).reciverCollectPayment(owner.address, otherAccount.address, amount, round, amount, cid, sig);
         ch = await channel.getChannelByAddresses(owner.address, otherAccount.address);
         expect(ch.value).to.equal(200000-amount);
         expect(await channel.balanceOf(otherAccount.address)).to.equal(100000+amount);
