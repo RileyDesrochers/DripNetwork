@@ -2,27 +2,27 @@
     "files": [
         {
             "name": "City_night.png",
-            "price": "1200",
+            "price": 1200,
             "providerAddress": "0x1eBd2c4cfd2FC8202B06759bd071acfac189047a"
         },
         {
             "name": "s0.jpg",
-            "price": "250",
+            "price": 250,
             "providerAddress": "0x1eBd2c4cfd2FC8202B06759bd071acfac189047a"
         },
         {
             "name": "s1.jpg",
-            "price": "250",
+            "price": 250,
             "providerAddress": "0x1eBd2c4cfd2FC8202B06759bd071acfac189047a"
         },
         {
             "name": "s2.jpg",
-            "price": "300",
+            "price": 300,
             "providerAddress": "0x1eBd2c4cfd2FC8202B06759bd071acfac189047a"
         },
         {
             "name": "s3.jpg",
-            "price": "350",
+            "price": 350,
             "providerAddress": "0x1eBd2c4cfd2FC8202B06759bd071acfac189047a"
         }
     ]

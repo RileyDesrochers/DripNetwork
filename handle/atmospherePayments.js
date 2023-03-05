@@ -19,14 +19,14 @@ module.exports = class atmospherePayments {
     this.signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   }
 
-  async signData(to, amount, round){
-    const hash = await this.contract.getMessageHash(to, amount, round);
+  async signData(from, to, amount, round){
+    const hash = await this.contract.getMessageHash(from, to, amount, round);
     const sig = await this.signer.signMessage(ethers.utils.arrayify(hash));
     return sig;
   }
 
-  async getSigner(to, amount, round, sig){
-    const hash = await this.contract.getMessageHash(to, amount, round);
+  async getSigner(from, to, amount, round, sig){
+    const hash = await this.contract.getMessageHash(from, to, amount, round);
     const sigMsgHash = await this.contract.getEthSignedMessageHash(hash);
     const signer = await this.contract.recoverSigner(sigMsgHash, sig);
     return signer;

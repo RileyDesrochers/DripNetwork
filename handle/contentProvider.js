@@ -1,11 +1,12 @@
 const express = require("express");
 const atmospherePayments = require("./atmospherePayments.js");
 const fileObject = require("./fileObject.js");
+var fs = require('fs')
 require('dotenv').config()
 
 const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
 const rpc = "http://127.0.0.1:8545/";
-port = 6000;
+port = 4000;
 const ap = new atmospherePayments(rpc, contractAddress);
 const fo = new fileObject();
 
@@ -103,13 +104,10 @@ app.post("/connect", async function(req, res) {
   });
 });
 
-app.post("/receipt", async function(req, res) {
-  var msg = req.body;
-  
-  let r = await data.generateReceipt(msg.cid);
-  res.send({
-    message: r,
-  });
+app.post("/data", async function(req, res) {
+  var name = req.body.name;
+
+  res.sendFile("./files/"+name);
 });
 
 //let port = process.env.PORT;

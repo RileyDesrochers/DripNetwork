@@ -48,7 +48,7 @@ const {
         let amount = 500;
         let round = 0;
 
-        const hash = await channel.getMessageHash(otherAccount.address, amount, round)
+        const hash = await channel.getMessageHash(owner.address, otherAccount.address, amount, round)
         const sig = await owner.signMessage(ethers.utils.arrayify(hash))
 
         await channel.connect(otherAccount).reciverCollectPayment(owner.address, amount, round, sig);

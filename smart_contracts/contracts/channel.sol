@@ -131,8 +131,8 @@ contract Channel {
         }
     }
 
-	function getMessageHash(address reciver, uint256 amount, uint64 round) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(reciver, amount, round));
+	function getMessageHash(address from, address to, uint256 amount, uint64 round) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(from, to, amount, round));
     }
 
 	function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32){
@@ -223,7 +223,7 @@ contract Channel {
 		require(amount <= channels[from][msg.sender].value);
 
 		//address sender = channels[id].from;
-		bytes32 messageHash = getMessageHash(msg.sender, amount, round);
+		bytes32 messageHash = getMessageHash(from, msg.sender, amount, round);
 		bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
 
 		require(recoverSigner(ethSignedMessageHash, sig) == from);
