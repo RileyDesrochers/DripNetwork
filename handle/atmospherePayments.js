@@ -11,7 +11,7 @@ function sanitiseChannel(ch){//toString
   }
 }
 
-module.exports = class unDripPayments {
+module.exports = class atmospherePayments {
   constructor(rpc, address) {
     const provider = new ethers.providers.JsonRpcProvider(rpc);
     this.provider = provider;
@@ -19,14 +19,14 @@ module.exports = class unDripPayments {
     this.signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   }
 
-  async signData(from, to, networkProvider, amount, round, marginal, cid){
-    const hash = await this.contract.getMessageHash(from, to, networkProvider, amount, round, marginal, cid);
+  async signData(to, amount, round){
+    const hash = await this.contract.getMessageHash(to, amount, round);
     const sig = await this.signer.signMessage(ethers.utils.arrayify(hash));
     return sig;
   }
 
-  async getSigner(from, to, networkProvider, amount, round, marginal, cid, sig){
-    const hash = await this.contract.getMessageHash(from, to, networkProvider, amount, round, marginal, cid);
+  async getSigner(to, amount, round, sig){
+    const hash = await this.contract.getMessageHash(to, amount, round);
     const sigMsgHash = await this.contract.getEthSignedMessageHash(hash);
     const signer = await this.contract.recoverSigner(sigMsgHash, sig);
     return signer;
@@ -46,7 +46,7 @@ module.exports = class unDripPayments {
     return "success"
   }
 
-  async handleConnect(from){
+  async getChannel(from){
     const to = this.signer.address;
     const ch = sanitiseChannel(await this.contract.getChannelByAddresses(from, to));
     return ch;

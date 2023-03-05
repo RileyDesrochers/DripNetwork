@@ -13,10 +13,9 @@ contract Channel {
 
 	mapping(address => uint256) private _balances;
 	IERC20 public token;
-	mapping(address => uint256) providerFee; //fraction out of 1,000,000 cannot be zero
 
 	//Counters.Counter channelIDs;
-	uint256 lockPeriod = 1 days;
+	uint64 lockPeriod = 1 days;
 	uint8 public decimals = 18;
 
 	enum State {NONEXISTANT,OPEN,LOCKED}
@@ -25,7 +24,7 @@ contract Channel {
 		uint256 value;
 		State state;
 		Counters.Counter round;
-		uint256 lockTime;
+		uint64 lockTime;
 	}
 
 	// channels is a array of channels with the index being the index ID
@@ -36,15 +35,13 @@ contract Channel {
 
 	//event Open(uint64 indexed ID, uint256 value);
 	event Fund(address indexed from, address indexed to, uint256 amount);
-	event Lock(address indexed from, address indexed to, uint256 time);
+	event Lock(address indexed from, address indexed to, uint64 time);
 	event Defund(address indexed from, address indexed to, uint256 amount);
 	event Transfer(address from, address to, uint256 amount);
 	//FIX add more events
 
-	constructor(address _token, address _networkProvider, uint256 _providerFee) {
-		require(_providerFee < 20000 && _providerFee != 0);
+	constructor(address _token) {
         token = IERC20(_token);
-		providerFee[_networkProvider] = _providerFee;
     }
 
 	//modifiers--------------------------------------------------------------------------
@@ -58,6 +55,16 @@ contract Channel {
 		require(channels[sender][reciver].state == State.LOCKED, "Channel is not locked");
 		_;
 	}
+
+	/*modifier requireSender(address sender, address reciver){
+		require(channels[id].from == msg.sender, "You are not the channel sender");
+		_;
+	}
+
+	modifier requireReciver(address sender, address reciver){
+		require(channels[id].to == msg.sender, "You are not the channel recipient");
+		_;
+	}*/
 
 	//deposit and withdrawal functions----------------------------------------------------------------
 
@@ -89,6 +96,7 @@ contract Channel {
 
 	function transfer(address to, uint256 amount) public returns(bool){
 		address from = msg.sender;
+		require(from != address(0), "ERC20: transfer from the zero address");
 		require(to != address(0), "ERC20: transfer to the zero address");
 		uint256 fromBalance = _balances[from];
 		require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
@@ -110,6 +118,10 @@ contract Channel {
         return _balances[account];
     }
 
+    /*function hashState(uint64 id, uint256 amount, uint64 round) internal  returns (bytes32) {
+		return keccak256(abi.encodePacked(id, amount, round));
+	}*/
+
 	function splitSignature(bytes memory sig) public pure returns(bytes32 r, bytes32 s, uint8 v){
         require(sig.length == 65, "invalid signature length");
         assembly {
@@ -119,8 +131,8 @@ contract Channel {
         }
     }
 
-	function getMessageHash(address from, address to, address networkProvider, uint256 amount, uint256 round, uint256 marginal, string memory cid) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(from, to, networkProvider, amount, round, marginal, cid));
+	function getMessageHash(address reciver, uint256 amount, uint64 round) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(reciver, amount, round));
     }
 
 	function getEthSignedMessageHash(bytes32 _messageHash) public pure returns (bytes32){
@@ -148,50 +160,50 @@ contract Channel {
 	//user functions-----------------------------------------------------------------------------
 
 	function open(address to, uint256 value) public {
-		address from = msg.sender;
-		uint256 Balance = _balances[from];
+		uint256 Balance = _balances[msg.sender];
 		require(value <= Balance, "you do not have the balance to fund channel");
-		require(channels[from][to].state == State.NONEXISTANT, "channel already opened use senderFundChannel() instead");
+		require(channels[msg.sender][to].state == State.NONEXISTANT, "channel already opened use senderFundChannel() instead");
 		
-		_balances[from] = Balance - value;
+		unchecked {
+			_balances[msg.sender] = Balance - value;
+		}
+
+		//uint64 id = uint64(channelIDs.current());
 
 		Counters.Counter memory round;
 
-		channels[from][to] = ChannelState(value, State.OPEN, round, 0);
+		channels[msg.sender][to] = ChannelState(value, State.OPEN, round, 0);
 
-		channelReciversBySender[from].push(to);
-		channelSendersByReciver[to].push(from);
+		channelReciversBySender[msg.sender].push(to);
+		channelSendersByReciver[to].push(msg.sender);
 
-		emit Fund(from, to, value);
+		//channelIDs.increment();
+		//channelIDsByAddresses[msg.sender][to] = true;
+
+		emit Fund(msg.sender, to, value);
 	}
 
 	function senderFundChannel(address to, uint256 amount) public requireOpen(msg.sender, to){
-		address from = msg.sender;
-		uint256 Balance = _balances[from];
+		uint256 Balance = _balances[msg.sender];
 		require(amount <= Balance, "you do not have the balance to fund channel");
-		
-		_balances[from] = Balance - amount;
-		channels[from][to].value += amount;
+		unchecked {
+			_balances[msg.sender] = Balance - amount;
+			channels[msg.sender][to].value += amount;
+		}
 
-		emit Fund(from, to, amount);
+		emit Fund(msg.sender, to, amount);
 	}
 
 	function senderLock(address to) public requireOpen(msg.sender, to){
 		channels[msg.sender][to].state = State.LOCKED;
-		uint256 time = uint64(block.timestamp);
+		uint64 time = uint64(block.timestamp);
 		channels[msg.sender][to].lockTime = time;
 
 		emit Lock(msg.sender, to, time);
-	}
-
-	function senderUnlock(address to) public requireLocked(msg.sender, to){
-		channels[msg.sender][to].state = State.OPEN;
-
-		//emit Lock(msg.sender, to, time);
-	}
+	}//FIX write sender Unlock function
 
 	function senderWithdrawal(address to) public requireLocked(msg.sender, to){
-		uint256 lockTime = channels[msg.sender][to].lockTime;
+		uint64 lockTime = channels[msg.sender][to].lockTime;
 		require(block.timestamp < lockTime + lockPeriod);
 
 		uint256 amount = channels[msg.sender][to].value;
@@ -206,25 +218,20 @@ contract Channel {
 	//recipient functions-----------------------------------------------------------------------------
 
 	//does no require channel to be open
-	function reciverCollectPayment(address from, address to, uint256 amount, uint256 round, uint256 marginal, string memory cid, bytes memory senderSig) public {
-		address networkProvider = msg.sender;
-		uint256 fee = providerFee[networkProvider];
-		require(fee != 0, "only networkProviders can call this function");
-		require(round == channels[from][to].round.current(), "incorrect round");
-		require(amount <= channels[from][to].value, "not enough funds to make this payment");
+	function reciverCollectPayment(address from, uint256 amount, uint64 round, bytes memory sig) public {
+		require(round == channels[from][msg.sender].round.current());
+		require(amount <= channels[from][msg.sender].value);
 
 		//address sender = channels[id].from;
-		bytes32 messageHash = getMessageHash(from, to, networkProvider, amount, round, marginal, cid);
+		bytes32 messageHash = getMessageHash(msg.sender, amount, round);
 		bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
 
-		require(recoverSigner(ethSignedMessageHash, senderSig) == from);
+		require(recoverSigner(ethSignedMessageHash, sig) == from);
+		//require(ECDSA.recover(hash, sig) == sender, "invalid signature");
 		
-		channels[from][to].value -= amount;
-		channels[from][to].round.increment();
-		
-		uint256 feeTotal = fee * amount / 1000000;
-		_balances[networkProvider] += feeTotal;
-		_balances[to] += amount - feeTotal;
+		channels[from][msg.sender].value -= amount;
+		channels[from][msg.sender].round.increment();
+		_balances[msg.sender] += amount;
 
 		emit Defund(from, msg.sender, amount);
 	}
